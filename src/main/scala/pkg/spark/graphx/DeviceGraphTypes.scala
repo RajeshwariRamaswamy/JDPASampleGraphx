@@ -1,4 +1,4 @@
-package pkg.spark.hbase
+package pkg.spark.graphx
 
 import org.apache.spark._
 import org.apache.spark.graphx._
@@ -22,10 +22,10 @@ object DeviceGraphTypes {
   
   case class Adjacency(source: EdgeSource, validAt: Long )
 
-  case class EdgeTag(adjacencies: Seq[Adjacency], distanceMap: SPMap)
+  case class EdgeTag(adjacencies: Seq[Adjacency])
 
   case class VertexTag(id: String, devType: DeviceType)
 
   def singleTag(source: EdgeSource, validAt: Long) =
-    EdgeTag(Seq(Adjacency(source, validAt)), emptySPMap)
+    EdgeTag(Seq(Adjacency(source, validAt)))
 }
