@@ -9,12 +9,8 @@ import java.util.Date
 import java.util.Calendar
 
 
-object GraphxComponents {
-  def main(args: Array[String]) {
- val conf = new SparkConf().setAppName("GraphX device graph demo")
-    .setMaster("local[2]")
-
-  val sc = new SparkContext(conf)
+object  GraphxComponents {
+  
   val calender = Calendar.getInstance();
  
    val currentTimestamp = calender.getTime();
@@ -34,6 +30,41 @@ object GraphxComponents {
   calender.add(Calendar.WEEK_OF_MONTH, -1)
   val twoWeekBeforeWeekTime = calender.getTime();
   val twoWeekBefore = twoWeekBeforeWeekTime.getTime();
+  
+def adjacencyRules(adjacencies : Seq[Adjacency]) : Int
+     = {
+        if( adjacencies.isEmpty )
+           Int.MaxValue // Absolute lowest weight if no adjacencies.
+         else if( adjacencies.exists(_.source == KO2O) )
+           // Highest weight if at least one adjacency from KO2O has ever existed.
+          1
+          else if( System.currentTimeMillis - adjacencies.head.validAt > currentWeek )
+           // Lower weight if the most recent adjacency is too old
+          4
+           
+        else if(adjacencies.exists(adj => adj.validAt < currentWeek 
+              && adj.validAt > oneWeekBefore  &&  adj.validAt <  twoWeekBefore))
+           // if edge seen this week , not in the previous week but there 2 weeks before
+           20
+      
+         else if( adjacencies.exists(_.source == Client) )
+           2
+           
+        else if( adjacencies.forall(_.source == Tapad) )
+           // Not just one but all adjacencies come from Tapad
+          4
+         else
+           // Even lower weight in all other cases
+          16
+}
+
+ 
+def main(args: Array[String]) {
+ val conf = new SparkConf().setAppName("GraphX device graph demo")
+    .setMaster("local[2]")
+
+  val sc = new SparkContext(conf)
+
 
 
   val deviceInfo: RDD[(VertexId, VertexTag)] =
@@ -85,8 +116,6 @@ object GraphxComponents {
       Edge(13L, 35L, singleTag(Tapad, today))
 
   ))
-
-
   
   //Union Of both RDD for the insertion of new devices added recently
   
@@ -111,32 +140,6 @@ object GraphxComponents {
 
 
 
-def adjacencyRules(adjacencies : Seq[Adjacency]) : Int
-     = {
-        if( adjacencies.isEmpty )
-           Int.MaxValue // Absolute lowest weight if no adjacencies.
-         else if( adjacencies.exists(_.source == KO2O) )
-           // Highest weight if at least one adjacency from KO2O has ever existed.
-          1
-          else if( System.currentTimeMillis - adjacencies.head.validAt > currentWeek )
-           // Lower weight if the most recent adjacency is too old
-          4
-           
-        else if(adjacencies.exists(adj => adj.validAt < currentWeek 
-              && adj.validAt > oneWeekBefore  &&  adj.validAt <  twoWeekBefore))
-           // if edge seen this week , not in the previous week but there 2 weeks before
-           20
-    
-         else if( adjacencies.exists(_.source == Client) )
-           2
-           
-        else if( adjacencies.forall(_.source == Tapad) )
-           // Not just one but all adjacencies come from Tapad
-          4
-         else
-           // Even lower weight in all other cases
-          16
-}
 
   val weights =  graph.mapTriplets { edge => adjacencyRules(edge.attr.adjacencies.
       sortBy(- _.validAt) )}
